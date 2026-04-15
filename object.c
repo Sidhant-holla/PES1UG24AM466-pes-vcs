@@ -207,7 +207,19 @@ int object_read(const ObjectID *id, ObjectType *type_out, void **data_out, size_
     fread(buf, 1, file_size, f);
     fclose(f);
 
-    // TODO: parse header, verify integrity, extract data
+    // Step 3: Parse the header to extract type string and size
+    unsigned char *null_byte = memchr(buf, '\0', file_size);
+    if (!null_byte) { free(buf); return -1; }
+
+    // Step 4: Verify integrity — recompute hash and compare
+    ObjectID computed;
+    compute_hash(buf, file_size, &computed);
+    if (memcmp(computed.hash, id->hash, HASH_SIZE) != 0) {
+        free(buf);
+        return -1;
+    }
+
+    // TODO: set type_out, extract and return data portion
     free(buf);
     return -1;
 }
