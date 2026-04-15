@@ -136,8 +136,32 @@ int index_load(Index *index);
 
 // recursive helper to build tree for a given directory level
 static int write_tree_level(IndexEntry *entries, int count, const char *prefix, ObjectID *id_out) {
-    // TODO: build tree entries from index at this level
-    (void)entries; (void)count; (void)prefix; (void)id_out;
+    Tree tree;
+    tree.count = 0;
+    int prefix_len = strlen(prefix);
+
+    int i = 0;
+    while (i < count) {
+        const char *path = entries[i].path + prefix_len;
+        char *slash = strchr(path, '/');
+
+        if (slash == NULL) {
+            // file at this level — add directly to tree
+            TreeEntry *te = &tree.entries[tree.count];
+            te->mode = entries[i].mode;
+            te->hash = entries[i].hash;
+            strncpy(te->name, path, sizeof(te->name) - 1);
+            te->name[sizeof(te->name) - 1] = '\0';
+            tree.count++;
+            i++;
+        } else {
+            // TODO: handle subdirectories
+            i++;
+        }
+    }
+
+    // TODO: serialize tree and write to object store
+    (void)id_out;
     return -1;
 }
 
