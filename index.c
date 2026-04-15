@@ -145,8 +145,9 @@ int index_load(Index *index) {
         IndexEntry *e = &index->entries[index->count];
         int ret = fscanf(f, "%o %64s %lu %u %511s",
                          &e->mode, hex, &e->mtime_sec, &e->size, e->path);
-        if (ret != 5) break;
-        if (hex_to_hash(hex, &e->hash) != 0) break;
+        if (ret == EOF) break;   // end of file
+        if (ret != 5) { fclose(f); return -1; }  // malformed line
+        if (hex_to_hash(hex, &e->hash) != 0) { fclose(f); return -1; }
         index->count++;
     }
 
