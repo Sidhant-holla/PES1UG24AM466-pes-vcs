@@ -115,7 +115,20 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
     // Step 2: Compute SHA-256 hash of the full object
     compute_hash(full_object, full_len, id_out);
 
-    // TODO: dedup check, shard dir creation, atomic write
+    // Step 3: Check if object already exists (deduplication)
+    if (object_exists(id_out)) {
+        free(full_object);
+        return 0;
+    }
+
+    // Step 4: Create shard directory (.pes/objects/XX/)
+    char hex[HASH_HEX_SIZE + 1];
+    hash_to_hex(id_out, hex);
+    char shard_dir[512];
+    snprintf(shard_dir, sizeof(shard_dir), "%s/%.2s", OBJECTS_DIR, hex);
+    mkdir(shard_dir, 0755);
+
+    // TODO: write to temp file, fsync, atomic rename
     free(full_object);
     return -1;
 }
