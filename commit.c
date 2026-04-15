@@ -194,8 +194,14 @@ int head_update(const ObjectID *new_commit) {
 //
 // Returns 0 on success, -1 on error.
 int commit_create(const char *message, ObjectID *commit_id_out) {
-    // TODO: Implement commit creation
-    // (See Lab Appendix for logical steps)
+    // build tree from the current index
+    Commit c;
+    if (tree_from_index(&c.tree) != 0) return -1;
+
+    // read parent commit from HEAD (may not exist for first commit)
+    c.has_parent = (head_read(&c.parent) == 0);
+
+    // TODO: fill in author/timestamp, serialize, write, update HEAD
     (void)message; (void)commit_id_out;
     return -1;
 }
