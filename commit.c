@@ -218,6 +218,6 @@ int commit_create(const char *message, ObjectID *commit_id_out) {
     }
     free(commit_data);
 
-    // TODO: update HEAD to point to new commit
-    return -1;
+    // update HEAD to point to the new commit
+    return head_update(commit_id_out);
 }
