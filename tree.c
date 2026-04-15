@@ -174,8 +174,7 @@ static int write_tree_level(IndexEntry *entries, int count, const char *prefix, 
             // recurse into subdirectory
             TreeEntry *te = &tree.entries[tree.count];
             te->mode = 040000;
-            strncpy(te->name, dir_name, sizeof(te->name) - 1);
-            te->name[sizeof(te->name) - 1] = '\0';
+            snprintf(te->name, sizeof(te->name), "%s", dir_name);
 
             if (write_tree_level(entries + i, j - i, new_prefix, &te->hash) != 0)
                 return -1;
@@ -185,9 +184,14 @@ static int write_tree_level(IndexEntry *entries, int count, const char *prefix, 
         }
     }
 
-    // TODO: serialize tree and write to object store
-    (void)id_out;
-    return -1;
+    // serialize the tree and write it to the object store
+    void *tree_data;
+    size_t tree_len;
+    if (tree_serialize(&tree, &tree_data, &tree_len) != 0) return -1;
+
+    int ret = object_write(OBJ_TREE, tree_data, tree_len, id_out);
+    free(tree_data);
+    return ret;
 }
 
 int tree_from_index(ObjectID *id_out) {
