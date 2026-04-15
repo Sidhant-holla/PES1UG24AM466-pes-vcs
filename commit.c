@@ -206,7 +206,18 @@ int commit_create(const char *message, ObjectID *commit_id_out) {
     c.timestamp = (uint64_t)time(NULL);
     snprintf(c.message, sizeof(c.message), "%s", message);
 
-    // TODO: serialize, write to object store, update HEAD
-    (void)commit_id_out;
+    // serialize the commit to text format
+    void *commit_data;
+    size_t commit_len;
+    if (commit_serialize(&c, &commit_data, &commit_len) != 0) return -1;
+
+    // write commit object to the store
+    if (object_write(OBJ_COMMIT, commit_data, commit_len, commit_id_out) != 0) {
+        free(commit_data);
+        return -1;
+    }
+    free(commit_data);
+
+    // TODO: update HEAD to point to new commit
     return -1;
 }
