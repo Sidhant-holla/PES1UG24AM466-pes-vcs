@@ -187,6 +187,9 @@ int index_save(const Index *index) {
                 sorted.entries[i].path);
     }
 
+    // check for write errors before syncing
+    if (ferror(f)) { fclose(f); return -1; }
+
     // flush and fsync before rename
     fflush(f);
     fsync(fileno(f));
