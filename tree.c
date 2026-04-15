@@ -155,8 +155,33 @@ static int write_tree_level(IndexEntry *entries, int count, const char *prefix, 
             tree.count++;
             i++;
         } else {
-            // TODO: handle subdirectories
-            i++;
+            // subdirectory — group entries with same dir prefix
+            char dir_name[256];
+            size_t dir_len = slash - path;
+            strncpy(dir_name, path, dir_len);
+            dir_name[dir_len] = '\0';
+
+            char new_prefix[512];
+            snprintf(new_prefix, sizeof(new_prefix), "%s%s/", prefix, dir_name);
+
+            // count how many entries share this subdirectory
+            int j = i;
+            while (j < count && strncmp(entries[j].path + prefix_len, dir_name, dir_len) == 0
+                   && entries[j].path[prefix_len + dir_len] == '/') {
+                j++;
+            }
+
+            // recurse into subdirectory
+            TreeEntry *te = &tree.entries[tree.count];
+            te->mode = 040000;
+            strncpy(te->name, dir_name, sizeof(te->name) - 1);
+            te->name[sizeof(te->name) - 1] = '\0';
+
+            if (write_tree_level(entries + i, j - i, new_prefix, &te->hash) != 0)
+                return -1;
+
+            tree.count++;
+            i = j;
         }
     }
 
