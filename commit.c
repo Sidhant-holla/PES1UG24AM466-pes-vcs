@@ -201,7 +201,12 @@ int commit_create(const char *message, ObjectID *commit_id_out) {
     // read parent commit from HEAD (may not exist for first commit)
     c.has_parent = (head_read(&c.parent) == 0);
 
-    // TODO: fill in author/timestamp, serialize, write, update HEAD
-    (void)message; (void)commit_id_out;
+    // fill in author and timestamp
+    snprintf(c.author, sizeof(c.author), "%s", pes_author());
+    c.timestamp = (uint64_t)time(NULL);
+    snprintf(c.message, sizeof(c.message), "%s", message);
+
+    // TODO: serialize, write to object store, update HEAD
+    (void)commit_id_out;
     return -1;
 }
