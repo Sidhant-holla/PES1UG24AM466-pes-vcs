@@ -128,9 +128,42 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
     snprintf(shard_dir, sizeof(shard_dir), "%s/%.2s", OBJECTS_DIR, hex);
     mkdir(shard_dir, 0755);
 
-    // TODO: write to temp file, fsync, atomic rename
+    // Step 5: Write to a temporary file in the shard directory
+    char final_path[512];
+    object_path(id_out, final_path, sizeof(final_path));
+
+    char tmp_path[528];
+    snprintf(tmp_path, sizeof(tmp_path), "%s/tmp_object", shard_dir);
+
+    int fd = open(tmp_path, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    if (fd < 0) {
+        free(full_object);
+        return -1;
+    }
+
+    ssize_t written = write(fd, full_object, full_len);
     free(full_object);
-    return -1;
+    if (written != (ssize_t)full_len) {
+        close(fd);
+        return -1;
+    }
+
+    // Step 6: fsync() the temporary file to ensure data reaches disk
+    fsync(fd);
+    close(fd);
+
+    // Step 7: rename() the temp file to the final path (atomic)
+    rename(tmp_path, final_path);
+
+    // Step 8: Open and fsync() the shard directory to persist the rename
+    int dir_fd = open(shard_dir, O_RDONLY);
+    if (dir_fd >= 0) {
+        fsync(dir_fd);
+        close(dir_fd);
+    }
+
+    // Step 9: Hash is already stored in *id_out from step 2
+    return 0;
 }
 
 // Read an object from the store.
